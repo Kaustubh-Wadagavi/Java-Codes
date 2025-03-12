@@ -107,7 +107,7 @@ class getUnusedBarcodes {
     private static final Logger logger = CustomLogger.createLogger(getUnusedBarcodes.class.getName());
 
     private static final String QUERY = """
-    	SELECT 
+    SELECT 
   	    COALESCE(site.name, 'Not Specified') AS "Supply Site Name",
   	    cp.short_title AS "CP Short Title",
   	    supply_types.name AS "Supply Type Name",
@@ -119,7 +119,7 @@ class getUnusedBarcodes {
   	    JOIN os_supply_items supply_items ON supply.identifier = supply_items.supply_id
   	    LEFT JOIN catissue_site site ON supply.site_id = site.identifier
 	WHERE supply_items.used_by IS NULL
-	ORDER BY supply.creation_time DESC;
+	    order by supply.creation_time desc;
     """;
 
     public static File generateUnusedKitBarcodesCSV(String user, String password, String host, String dbName) {
@@ -139,13 +139,14 @@ class getUnusedBarcodes {
                 logger.info("Generating CSV file: " + csvFile.getAbsolutePath());
 
                 try (BufferedWriter writer = new BufferedWriter(new FileWriter(csvFile))) {
-                    writer.write("\"Supply Site Name\",\"CP Short Title\",\"Supply Type Name\",\"Barcode\"\n");
+                    writer.write("\"Supply Site Name\",\"CP Short Title\",\"Supply Type Name\",\"Barcode\",\"Created On\"\n");
                     int recordCount = 0;
                     while (resultSet.next()) {
                         writer.write("\"" + resultSet.getString("Supply Site Name") + "\"," +
                                    "\"" + resultSet.getString("CP Short Title") + "\"," +
                                    "\"" + resultSet.getString("Supply Type Name") + "\"," +
-                                   "\"" + resultSet.getString("Barcode") + "\"\n");
+                                   "\"" + resultSet.getString("Barcode") + "\"," +
+                                   "\"" + resultSet.getString("Created On") + "\"\n");
                         recordCount++;
                     }
                     logger.info("CSV generation complete. Records written: " + recordCount);
