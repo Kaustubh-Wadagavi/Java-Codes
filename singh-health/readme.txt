@@ -36,10 +36,30 @@ java -cp ".;mysql-connector-java-8.0.22.jar;javax.mail-1.6.2.jar;activation-1.1.
 # How to run the program in Linux
 ########################################################
 A. Compile the program using the below command:
-
 javac -cp ".:mysql-connector-java-8.0.22.jar:javax.mail-1.6.2.jar:activation-1.1.1.jar" getUnusedKitBarcodes.java
 
 B. Run the program 
-
 java -cp ".:mysql-connector-java-8.0.22.jar:javax.mail-1.6.2.jar:activation-1.1.1.jar" getUnusedKitBarcodes config.properties
 
+#######################################################
+# How to build the jar file.
+#######################################################
+1. Extract all the dependencies
+mkdir temp_lib
+cd temp_lib
+jar -xf ../mysql-connector-java-8.0.22.jar
+jar -xf ../javax.mail-1.6.2.jar
+jar -xf ../activation-1.1.1.jar
+cd ..
+
+2. Create MANIFEST.MF
+Manifest-Version: 1.0
+Main-Class: getUnusedKitBarcodes
+
+3. Run the below command to create a jar file.
+jar -cvfm getUnusedKitBarcodes.jar MANIFEST.MF *.class -C temp_lib .
+
+###########################################################
+# How to run the program using the above jar
+###########################################################
+java -jar getUnusedKitBarcodes.jar config.properties
