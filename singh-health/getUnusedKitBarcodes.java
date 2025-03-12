@@ -55,7 +55,7 @@ class CustomLogger {
 class EmailSender {
     private static final Logger logger = CustomLogger.createLogger(EmailSender.class.getName());
     
-    public static boolean sendEmailWithAttachment(String from, String password, String to, String smtpHost, String smtpPort, String tls, File attachment) {
+    public static boolean sendEmailWithAttachment(String from, String password, String to, String smtpHost, String smtpPort, String environment, String tls, File attachment) {
         logger.info("Preparing to send email...");
         Properties props = new Properties();
         props.put("mail.smtp.host", smtpHost);
@@ -74,7 +74,7 @@ class EmailSender {
             message.setFrom(new InternetAddress(from));
             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
             String currentDate = new SimpleDateFormat("yyyy-MM-dd").format(new java.util.Date());
-            message.setSubject("OpenSpecimen: Unused Kit Barcodes Report " + currentDate);
+            message.setSubject("[OpenSpecimen/" + environment + "]: Unused Kit Barcodes Report " + currentDate);
 
             MimeBodyPart messageBodyPart = new MimeBodyPart();
             messageBodyPart.setText("Hello,\n\n" +
@@ -107,19 +107,20 @@ class getUnusedBarcodes {
     private static final Logger logger = CustomLogger.createLogger(getUnusedBarcodes.class.getName());
 
     private static final String QUERY = """
-    SELECT 
-  	    COALESCE(site.name, 'Not Specified') AS "Supply Site Name",
-  	    cp.short_title AS "CP Short Title",
-  	    supply_types.name AS "Supply Type Name",
-  	    supply_items.barcode AS "Barcode",
-  	    supply.creation_time AS "Created On"
-	FROM os_supplies supply
-  	    JOIN os_supply_types supply_types ON supply.type_id = supply_types.identifier
-  	    JOIN catissue_collection_protocol cp ON supply_types.cp_id = cp.identifier
-  	    JOIN os_supply_items supply_items ON supply.identifier = supply_items.supply_id
-  	    LEFT JOIN catissue_site site ON supply.site_id = site.identifier
-	WHERE supply_items.used_by IS NULL
-	    order by supply.creation_time desc;
+    SELECT
+    	COALESCE(site.name, 'Not Specified') AS "Supply Site Name",
+  	cp.short_title AS "CP Short Title",
+  	supply_types.name AS "Supply Type Name",
+  	supply_items.barcode AS "Barcode",
+  	supply.creation_time AS "Created On"
+    FROM os_supplies supply
+  	JOIN os_supply_types supply_types ON supply.type_id = supply_types.identifier
+  	JOIN catissue_collection_protocol cp ON supply_types.cp_id = cp.identifier
+  	JOIN os_supply_items supply_items ON supply.identifier = supply_items.supply_id
+  	LEFT JOIN catissue_site site ON supply.site_id = site.identifier
+    WHERE supply_items.used_by IS NULL
+	and supply_items.entity_type = 'visit'
+	order by supply.creation_time desc;
     """;
 
     public static File generateUnusedKitBarcodesCSV(String user, String password, String host, String dbName) {
@@ -191,6 +192,7 @@ public class getUnusedKitBarcodes {
                     configValues.getProperty("toEmailIds"),
                     configValues.getProperty("smtpServerHost"),
                     configValues.getProperty("smtpServerPort"),
+		    configValues.getProperty("environment"),
                     configValues.getProperty("startTLS"), csvFile);
         }
     }
