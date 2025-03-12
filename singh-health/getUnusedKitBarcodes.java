@@ -107,7 +107,7 @@ class getUnusedBarcodes {
     private static final Logger logger = CustomLogger.createLogger(getUnusedBarcodes.class.getName());
 
     private static final String QUERY = """
-    SELECT 
+    	SELECT 
   	    COALESCE(site.name, 'Not Specified') AS "Supply Site Name",
   	    cp.short_title AS "CP Short Title",
   	    supply_types.name AS "Supply Type Name",
@@ -119,7 +119,7 @@ class getUnusedBarcodes {
   	    JOIN os_supply_items supply_items ON supply.identifier = supply_items.supply_id
   	    LEFT JOIN catissue_site site ON supply.site_id = site.identifier
 	WHERE supply_items.used_by IS NULL
-	    order by supply.creation_time desc;
+	ORDER BY supply.creation_time desc;
     """;
 
     public static File generateUnusedKitBarcodesCSV(String user, String password, String host, String dbName) {
