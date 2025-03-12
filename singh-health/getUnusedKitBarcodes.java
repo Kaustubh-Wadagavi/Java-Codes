@@ -119,7 +119,7 @@ class getUnusedBarcodes {
   	    JOIN os_supply_items supply_items ON supply.identifier = supply_items.supply_id
   	    LEFT JOIN catissue_site site ON supply.site_id = site.identifier
 	WHERE supply_items.used_by IS NULL
-	ORDER BY supply.creation_time desc;
+	ORDER BY supply.creation_time DESC;
     """;
 
     public static File generateUnusedKitBarcodesCSV(String user, String password, String host, String dbName) {
