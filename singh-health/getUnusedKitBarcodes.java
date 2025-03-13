@@ -54,44 +54,50 @@ class CustomLogger {
 
 class EmailSender {
     private static final Logger logger = CustomLogger.createLogger(EmailSender.class.getName());
-    
-    public static boolean sendEmailWithAttachment(String from, String password, String to, String smtpHost, String smtpPort, String environment, String tls, File attachment) {
+
+    public static boolean sendEmailWithAttachment(String accountId, String from, String password, String to, String smtpHost, String smtpPort, String environment, String tls, File attachment) {
         logger.info("Preparing to send email...");
+        
         Properties props = new Properties();
         props.put("mail.smtp.host", smtpHost);
         props.put("mail.smtp.port", smtpPort);
         props.put("mail.smtp.auth", "true");
-        props.put("mail.smtp.starttls.enable", tls);
+        props.put("mail.smtp.starttls.enable", tls); // Ensuring STARTTLS is enabled
 
+        // Authenticate using accountId (not from email)
         Session session = Session.getInstance(props, new Authenticator() {
             protected PasswordAuthentication getPasswordAuthentication() {
-                return new PasswordAuthentication(from, password);
+                return new PasswordAuthentication(accountId, password); // Use accountId for login
             }
         });
 
         try {
             Message message = new MimeMessage(session);
-            message.setFrom(new InternetAddress(from));
+            message.setFrom(new InternetAddress(from)); // Send email from different email ID
             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
-            String currentDate = new SimpleDateFormat("yyyy-MM-dd").format(new java.util.Date());
+
+            String currentDate = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
             message.setSubject("[OpenSpecimen/" + environment + "]: Unused Kit Barcodes Report " + currentDate);
 
+            // Email Body
             MimeBodyPart messageBodyPart = new MimeBodyPart();
             messageBodyPart.setText("Hello,\n\n" +
                 "Please find the attached unused kit barcodes report generated on: " + currentDate + "\n\n" +
                 "Thanks,\n" +
                 "OpenSpecimen Administrator");
 
+            // Attachment
             MimeBodyPart attachmentPart = new MimeBodyPart();
             DataSource source = new FileDataSource(attachment);
             attachmentPart.setDataHandler(new DataHandler(source));
             attachmentPart.setFileName(attachment.getName());
 
+            // Combine parts
             Multipart multipart = new MimeMultipart();
             multipart.addBodyPart(messageBodyPart);
             multipart.addBodyPart(attachmentPart);
-
             message.setContent(multipart);
+
             logger.info("Sending email...");
             Transport.send(message);
             logger.info("Email sent successfully!");
@@ -108,7 +114,7 @@ class getUnusedBarcodes {
 
     private static final String QUERY = """
     SELECT
-    	COALESCE(site.name, 'Not Specified') AS "Supply Site Name",
+    COALESCE(site.name, 'Not Specified') AS "Supply Site Name",
   	cp.short_title AS "CP Short Title",
   	supply_types.name AS "Supply Type Name",
   	supply_items.barcode AS "Barcode",
@@ -123,8 +129,8 @@ class getUnusedBarcodes {
 	order by supply.creation_time desc;
     """;
 
-    public static File generateUnusedKitBarcodesCSV(String user, String password, String host, String dbName) {
-        String jdbcUrl = "jdbc:mysql://" + host + ":3306/" + dbName + "?useSSL=false&serverTimezone=UTC";
+    public static File generateUnusedKitBarcodesCSV(String user, String password, String host, String dbPort, String dbName) {
+        String jdbcUrl = "jdbc:mysql://" + host + ":" + dbPort + "/" + dbName + "?useSSL=false"; 
         File csvFile = null;
 
         try {
@@ -184,10 +190,12 @@ public class getUnusedKitBarcodes {
         File csvFile = getUnusedBarcodes.generateUnusedKitBarcodesCSV(configValues.getProperty("dbUser"),
                 configValues.getProperty("dbPassword"),
                 configValues.getProperty("dbHost"),
+                configValues.getProperty("dbPort"),
                 configValues.getProperty("dbName"));
         if (csvFile != null) {
             logger.info("Report generated successfully. Sending email...");
-            EmailSender.sendEmailWithAttachment(configValues.getProperty("fromEmailId"),
+            EmailSender.sendEmailWithAttachment(configValues.getProperty("accountId"),
+                    configValues.getProperty("fromEmailId"),
                     configValues.getProperty("emailPassword"),
                     configValues.getProperty("toEmailIds"),
                     configValues.getProperty("smtpServerHost"),
