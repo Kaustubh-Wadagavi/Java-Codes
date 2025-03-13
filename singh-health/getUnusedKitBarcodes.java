@@ -129,8 +129,7 @@ class getUnusedBarcodes {
 	order by supply.creation_time desc;
     """;
 
-    public static File generateUnusedKitBarcodesCSV(String user, String password, String host, String dbPort, String dbName) {
-        String jdbcUrl = "jdbc:mysql://" + host + ":" + dbPort + "/" + dbName + "?useSSL=false"; 
+    public static File generateUnusedKitBarcodesCSV(String jdbcUrl,String user, String password) {
         File csvFile = null;
 
         try {
@@ -187,11 +186,9 @@ public class getUnusedKitBarcodes {
         }
 
         logger.info("Generating unused kit barcodes report...");
-        File csvFile = getUnusedBarcodes.generateUnusedKitBarcodesCSV(configValues.getProperty("dbUser"),
-                configValues.getProperty("dbPassword"),
-                configValues.getProperty("dbHost"),
-                configValues.getProperty("dbPort"),
-                configValues.getProperty("dbName"));
+        File csvFile = getUnusedBarcodes.generateUnusedKitBarcodesCSV(configValues.getProperty("jdbcURL"),
+                configValues.getProperty("dbUser"),
+                configValues.getProperty("dbPassword"));
         if (csvFile != null) {
             logger.info("Report generated successfully. Sending email...");
             EmailSender.sendEmailWithAttachment(configValues.getProperty("accountId"),
