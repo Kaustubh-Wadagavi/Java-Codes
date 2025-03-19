@@ -21,7 +21,7 @@ startTLS = <Enable if StartTLS is to be used for your email server>  <values: tr
 2. Three extracted jar files should be present in the same program directory: activation-1.1.1.jar,javax.mail-1.6.2.jar .mysql-connector-java-8.0.22.jar
 
 ##############################################################
-# ENCRYPTING PASSWORDS FROM SECURITY FROM THE BROWSER CONSOLE
+# ENCRYPTING PASSWORDS FOR SECURITY USING JAVA CODE
 ##############################################################
 A. Compile the program
 javac PasswordEncryption.java 
