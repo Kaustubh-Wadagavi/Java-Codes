@@ -30,6 +30,9 @@ import javax.activation.DataSource;
 import javax.activation.FileDataSource;
 import javax.mail.Multipart;
 import java.io.FileInputStream;
+import javax.crypto.Cipher;
+import javax.crypto.spec.SecretKeySpec;
+import java.util.Base64;
 
 class CustomLogger {
     public static Logger createLogger(String className) {
@@ -166,12 +169,12 @@ class getUnusedBarcodes {
     }
 }
 
-public class getUnusedKitBarcodes {
-    private static final Logger logger = CustomLogger.createLogger(getUnusedKitBarcodes.class.getName());
-    
+public class GetUnusedKitBarcodes {
+    private static final Logger logger = CustomLogger.createLogger(GetUnusedKitBarcodes.class.getName());
+    private static final String SECRET_KEY = "A9v!$b@2z#D4x&E5"; // 16-byte key
     public static void main(String[] args) {
         if (args.length == 0) {
-            logger.severe("Error: Configuration file not provided. Usage: java getUnusedKitBarcodes <config-file>");
+            logger.severe("Error: Configuration file not provided. Usage: java -jar GetUnusedKitBarcodes <config-file>");
             System.exit(1);
         }
 
@@ -185,20 +188,38 @@ public class getUnusedKitBarcodes {
             System.exit(1);
         }
 
+        String decryptedDbPassword = "";
+        String decryptedEmailPassword = "";
+
+        try {
+            decryptedDbPassword = decrypt(configValues.getProperty("dbPassword"));
+            decryptedEmailPassword = decrypt(configValues.getProperty("emailPassword"));
+        } catch (Exception e) {
+            e.printStackTrace();  // Handle exception (log it or take appropriate action)
+        }
+
         logger.info("Generating unused kit barcodes report...");
         File csvFile = getUnusedBarcodes.generateUnusedKitBarcodesCSV(configValues.getProperty("jdbcURL"),
                 configValues.getProperty("dbUser"),
-                configValues.getProperty("dbPassword"));
+                decryptedDbPassword);
         if (csvFile != null) {
             logger.info("Report generated successfully. Sending email...");
             EmailSender.sendEmailWithAttachment(configValues.getProperty("accountId"),
                     configValues.getProperty("fromEmailId"),
-                    configValues.getProperty("emailPassword"),
+                    decryptedEmailPassword,
                     configValues.getProperty("toEmailIds"),
                     configValues.getProperty("smtpServerHost"),
                     configValues.getProperty("smtpServerPort"),
-		    configValues.getProperty("environment"),
+		            configValues.getProperty("environment"),
                     configValues.getProperty("startTLS"), csvFile);
         }
+    }
+
+    public static String decrypt(String encryptedPassword) throws Exception {
+        Cipher cipher = Cipher.getInstance("AES");
+        SecretKeySpec secretKeySpec = new SecretKeySpec(SECRET_KEY.getBytes(), "AES");
+        cipher.init(Cipher.DECRYPT_MODE, secretKeySpec);
+        byte[] decryptedBytes = cipher.doFinal(Base64.getDecoder().decode(encryptedPassword));
+        return new String(decryptedBytes);
     }
 }
